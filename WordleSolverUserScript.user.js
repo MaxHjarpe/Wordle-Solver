@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Wordle Solver
+// @name         Wordle Solver!
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.3
 // @description  A Wordle Solver that plays the game for you. Lean back and get the W!
 // @author       You
 // @match        https://www.nytimes.com/games/wordle/index.html
@@ -13038,6 +13038,7 @@ function checkBoardState() {
 
         else if (tileState == "present")
         {
+            // regex for this is not doing anything atm since no words with the char is left anyway
             regex += '[^' + tileContent + ']';
             availableWords = availableWords.filter(function (word) {
                 return word.indexOf(tileContent) != i && word.includes(tileContent);
@@ -13051,7 +13052,7 @@ function checkBoardState() {
 
             if (index.length == 1)
             {
-                // we know the char doesnt appear at all in the word so we can remove any word with it
+                // We know the char doesnt appear at all in the word so we can remove any word with it
                 availableWords = availableWords.filter(function (word) {
                     return !word.includes(tileContent);
                 });
@@ -13059,15 +13060,15 @@ function checkBoardState() {
 
             else if (charIsCorrectElsewhere(row, tileContent, index))
             {
-                // THIS DOES NOT ACCOUNT FOR IF THE WORD IS FOR EXAMPLE "BOBBY" AND WE WRITE "BLOBB", IT WILL RETURN WORDS WITH ONLY 1 "B" AND FAIL.
+                // This is prone to bugs
                 availableWords = availableWords.filter(function (word) {
-                    return word.indexOf(tileContent) == word.lastIndexOf(tileContent);
+                    return getAllIndexes(word, tileContent).length < index.length && word.indexOf(tileContent) != i;
                 });
             }
 
             else
             {
-                // we know the char doesnt appear at all in the word so we can remove any word with it
+                // We know the char doesnt appear at all in the word so we can remove any word with it
                 availableWords = availableWords.filter(function (word) {
                     return !word.includes(tileContent);
                 });
