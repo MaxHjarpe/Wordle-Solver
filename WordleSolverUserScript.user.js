@@ -18,10 +18,11 @@ resetBtn.addEventListener("click", function () {
     localStorage.clear();
     location.reload();
 });
-document.querySelector("body > header").appendChild(resetBtn);
+
 
 // wait for page to load before input
 window.addEventListener('load', function () {
+    document.querySelector("body > header").appendChild(resetBtn);
     inputWord(startingWord);
 });
 // counter to check row index as well as to exit the script at max guesses
