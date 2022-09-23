@@ -1,32 +1,18 @@
 // ==UserScript==
 // @name         Wordle Solver!
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  A Wordle Solver that plays the game for you. Lean back and get the W!
 // @author       You
 // @match        https://www.nytimes.com/games/wordle/index.html
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=nytimes.com
 // @grant        none
+// @require      http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
+// @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
 // ==/UserScript==
 
 let startingWord = "crane"; // If you want to change your starting word
-
-// reset button for testing purposes and multiple tries
-let resetBtn = document.createElement("button");
-resetBtn.innerHTML = "Reset";
-resetBtn.addEventListener("click", function () {
-    localStorage.clear();
-    location.reload();
-});
-
-
-// wait for page to load before input
-window.addEventListener('load', function () {
-    document.querySelector("body > header").appendChild(resetBtn);
-    inputWord(startingWord);
-});
-// counter to check row index as well as to exit the script at max guesses
-let round = 1;
+let round = 1; // counter to check row index as well as to exit the script at max guesses
 let availableWords = ["lowes",
                       "flees",
                       "hucks",
@@ -13001,7 +12987,34 @@ let availableWords = ["lowes",
                       "kibes",
                       "times",
                       "hoaed"
-];
+]; // complete word list with all possible guesses
+
+// reset button for testing purposes and for multiple tries
+let resetBtn = document.createElement("button");
+resetBtn.innerHTML = "Reset";
+resetBtn.addEventListener("click", function () {
+    localStorage.clear();
+    location.reload();
+});
+
+
+// waits for page to load before input. dispatch click event on modal pop-up
+waitForKeyElements("#wordle-app-game > div.Modal-module_modalOverlay__81ZCi", onPageFullyLoaded);
+
+function onPageFullyLoaded (jNode) {
+    // makes sure we dont close the "result" modal at the end of the game
+    if (round > 1) {
+        return;
+    }
+    document.querySelector("#wordle-app-game > div.Modal-module_modalOverlay__81ZCi").click();
+    document.querySelector("body > header").appendChild(resetBtn);
+    inputWord(startingWord);
+}
+
+
+//           ^^^  VARIABLES AND WHAT NOT  ^^^
+//---------------------------------------------------------------------------------//
+//           vvv  FUNCTIONS  vvv
 
 
 function inputWord(word) {
