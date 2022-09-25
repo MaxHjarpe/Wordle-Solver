@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wordle Solver!
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  A Wordle Solver that plays the game for you. Lean back and get the W!
 // @author       You
 // @match        https://www.nytimes.com/games/wordle/index.html
@@ -12999,24 +12999,17 @@ resetBtn.addEventListener("click", function () {
 
 function waitForKeyElements (
 selectorTxt, /* Required: The jQuery selector string that specifies the desired element(s). */
- actionFunction, /* Required: The code to run when elements are found. It is passed a jNode to the matched element. */
- bWaitOnce, /* Optional: If false, will continue to scan for new elements even after the first match is found. */
- iframeSelector /* Optional: If set, identifies the iframe to search.*/)
+ actionFunction /* Required: The code to run when elements are found. It is passed a jNode to the matched element. */
+)
 {
     var targetNodes, btargetsFound;
 
     if (typeof iframeSelector == "undefined"){
         targetNodes = $(selectorTxt);
     }
-    else {
-        targetNodes = $(iframeSelector).contents().find(selectorTxt);
-    }
 
     if (targetNodes && targetNodes.length > 0) {
         btargetsFound = true;
-        /*--- Found target node(s).  Go through each and act if they
-            are new.
-        */
         targetNodes.each ( function () {
             var jThis = $(this);
             var alreadyFound = jThis.data ('alreadyFound') || false;
@@ -13043,7 +13036,7 @@ selectorTxt, /* Required: The jQuery selector string that specifies the desired 
     var timeControl = controlObj [controlKey];
 
     //--- Now set or clear the timer as appropriate.
-    if (btargetsFound && bWaitOnce && timeControl) {
+    if (btargetsFound && timeControl) {
         //--- The only condition where we need to clear the timer.
         clearInterval (timeControl);
         delete controlObj [controlKey]
@@ -13053,9 +13046,7 @@ selectorTxt, /* Required: The jQuery selector string that specifies the desired 
         if (!timeControl) {
             timeControl = setInterval (function () {
                 waitForKeyElements (selectorTxt,
-                                    actionFunction,
-                                    bWaitOnce,
-                                    iframeSelector);
+                                    actionFunction);
             }, 300);
             controlObj [controlKey] = timeControl;
         }
