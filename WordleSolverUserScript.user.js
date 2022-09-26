@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wordle Solver!
 // @namespace    http://tampermonkey.net/
-// @version      0.8
+// @version      0.9
 // @description  A Wordle Solver that plays the game for you. Lean back and get the W!
 // @author       You
 // @match        https://www.nytimes.com/games/wordle/index.html
@@ -22,6 +22,8 @@ resetBtn.addEventListener("click", function () {
 });
 
 
+document.querySelector("body > header").appendChild(resetBtn);
+
 // the welcome modal needs to be waited for in order to be clicked away
 waitForModalToLoad();
 
@@ -34,7 +36,6 @@ function onPageFullyLoaded() {
 
     if (modal !== null || modal !== undefined) modal.click();
 
-    document.querySelector("body > header").appendChild(resetBtn);
     inputWord(startingWord);
 }
 
