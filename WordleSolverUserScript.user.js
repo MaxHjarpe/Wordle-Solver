@@ -1,16 +1,15 @@
 // ==UserScript==
 // @name         Wordle Solver!
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      0.8
 // @description  A Wordle Solver that plays the game for you. Lean back and get the W!
 // @author       You
 // @match        https://www.nytimes.com/games/wordle/index.html
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=nytimes.com
 // @grant        none
-// @require      http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
 // ==/UserScript==
 
-let startingWord = "crane"; // If you want to change your starting word
+const startingWord = "crane"; // If you want to change your starting word
 let round = 1; // counter to check row index as well as to exit the script at max guesses
 
 
@@ -23,88 +22,22 @@ resetBtn.addEventListener("click", function () {
 });
 
 
-function waitForKeyElements (
-selectorTxt, /* Required: The jQuery selector string that specifies the desired element(s). */
- actionFunction /* Required: The code to run when elements are found. It is passed a jNode to the matched element. */
-)
-{
-    var targetNodes, btargetsFound;
-
-    if (typeof iframeSelector == "undefined"){
-        targetNodes = $(selectorTxt);
-    }
-
-    if (targetNodes && targetNodes.length > 0) {
-        btargetsFound = true;
-        targetNodes.each ( function () {
-            var jThis = $(this);
-            var alreadyFound = jThis.data ('alreadyFound') || false;
-
-            if (!alreadyFound) {
-                //--- Call the payload function.
-                var cancelFound = actionFunction (jThis);
-                if (cancelFound){
-                    btargetsFound = false;
-                }
-                else {
-                    jThis.data ('alreadyFound', true);
-                }
-            }
-        } );
-    }
-    else {
-        btargetsFound = false;
-    }
-
-    //--- Get the timer-control variable for this selector.
-    var controlObj = waitForKeyElements.controlObj || {};
-    var controlKey = selectorTxt.replace (/[^\w]/g, "_");
-    var timeControl = controlObj [controlKey];
-
-    //--- Now set or clear the timer as appropriate.
-    if (btargetsFound && timeControl) {
-        //--- The only condition where we need to clear the timer.
-        clearInterval (timeControl);
-        delete controlObj [controlKey]
-    }
-    else {
-        //--- Set a timer, if needed.
-        if (!timeControl) {
-            timeControl = setInterval (function () {
-                waitForKeyElements (selectorTxt,
-                                    actionFunction);
-            }, 300);
-            controlObj [controlKey] = timeControl;
-        }
-    }
-    waitForKeyElements.controlObj = controlObj;
-}
+// the welcome modal needs to be waited for in order to be clicked away
+waitForModalToLoad();
 
 
 
+function onPageFullyLoaded() {
+    if (round > 1) return;
 
+    const modal = document.querySelector("#wordle-app-game > div.Modal-module_modalOverlay__81ZCi");
 
+    if (modal !== null || modal !== undefined) modal.click();
 
-
-
-
-// waits for page to load before input. dispatch click event on modal pop-up
-waitForKeyElements("#wordle-app-game > div.Modal-module_modalOverlay__81ZCi", onPageFullyLoaded);
-
-function onPageFullyLoaded (jNode) {
-    // makes sure we dont close the "result" modal at the end of the game
-    if (round > 1) {
-        return;
-    }
-    document.querySelector("#wordle-app-game > div.Modal-module_modalOverlay__81ZCi").click();
     document.querySelector("body > header").appendChild(resetBtn);
     inputWord(startingWord);
 }
 
-
-//           ^^^  VARIABLES AND WHAT NOT  ^^^
-//---------------------------------------------------------------------------------//
-//           vvv  FUNCTIONS  vvv
 
 
 function inputWord(word) {
@@ -208,6 +141,12 @@ async function awaitTiles() {
         await sleep(i * 2000);
     }
     checkBoardState();
+}
+async function waitForModalToLoad() {
+    for (let i = 0; i < 2; i++) {
+        await sleep(i * 2000);
+    }
+    onPageFullyLoaded();
 }
 
 function generateNewWordList(re, availableWords) {
