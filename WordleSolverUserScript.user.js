@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wordle Solver!
 // @namespace    http://tampermonkey.net/
-// @version      0.9
+// @version      1.0
 // @description  A Wordle Solver that plays the game for you. Lean back and get the W!
 // @author       You
 // @match        https://www.nytimes.com/games/wordle/index.html
@@ -11,102 +11,103 @@
 
 const startingWord = "crane"; // If you want to change your starting word
 let round = 1; // counter to check row index as well as to exit the script at max guesses
+const WORD_LENGTH = 5;
+//^(?=.*a)(?!a{5}).{5}$
 
+const solveButton = document.createElement("button");
+solveButton.classList.add('AuthCTA-module_shareButton__ULVqS');
+solveButton.innerHTML = "Solve";
+solveButton.style.color = "white";
+solveButton.style.fontFamily = "nyt-franklin";
+solveButton.style.fontWeight = 'bold';
+solveButton.style.fontSize = '20px';
+solveButton.style.backgroundColor = "#538D4E";
+solveButton.onclick = solve;
+document.querySelector("body > div > div > div.App-module_gameContainer__K_CBh > header > div.AppHeader-module_menuRight__Noasd").appendChild(solveButton);
 
 // reset button for testing purposes and for multiple tries
-let resetBtn = document.createElement("button");
-resetBtn.innerHTML = "Reset";
-resetBtn.addEventListener("click", function () {
-    localStorage.clear();
-    location.reload();
-});
+// const resetButton = document.createElement("button");
+// resetButton.classList.add('AuthCTA-module_shareButton__ULVqS');
+// resetButton.innerHTML = "Reset";
+// resetButton.style.backgroundColor = "red";
+// resetButton.style.fontWeight = 'bold';
+// resetButton.style.color = "white";
+// resetButton.addEventListener("click", () => {
+//     localStorage.clear();
+// });
+// document.querySelector("body > div > div > div.App-module_gameContainer__K_CBh > header > div.AppHeader-module_menuRight__Noasd").appendChild(resetButton);
 
-
-document.querySelector("body > header").appendChild(resetBtn);
-
-// the welcome modal needs to be waited for in order to be clicked away
-waitForModalToLoad();
-
-
-
-function onPageFullyLoaded() {
+function solve() {
     if (round > 1) return;
 
-    const modal = document.querySelector("#wordle-app-game > div.Modal-module_modalOverlay__81ZCi");
-
-    if (modal !== null || modal !== undefined) modal.click();
-
-    inputWord(startingWord);
+    enterGuess(startingWord);
 }
 
-
-
-function inputWord(word) {
-    for (let i = 0; i < 5; i++) {
-        window.addEventListener('keydown', (e) => { })
-
+function enterGuess(guessedWord) {
+    for (let i = 0; i < WORD_LENGTH; i++) {
+        window.addEventListener('keydown', (e) => {
+        })
         window.dispatchEvent(new KeyboardEvent('keydown', {
-            'key': word.charAt(i)}))
+            'key': guessedWord.charAt(i)
+        }))
     }
+
     window.dispatchEvent(new KeyboardEvent('keydown', {
-        'key': 'Enter'}))
-    awaitTiles();
+        'key': 'Enter'
+    }))
+    awaitTileAnimations();
 }
 
 function checkBoardState() {
     // TODO:
     // Look into bettering how the "present" tiles behave
-    if (round >= 6) {
-        throw new FatalError();
-    }
+    if (round >= 6) throw new FatalError();
 
-    let row = document.querySelector("#wordle-app-game > div.Board-module_boardContainer__cKb-C > div > div:nth-child("+round+")");
+    let row = document.querySelector(`[aria-label="Row ${round}"]`)
     let regex = "";
 
-    for (let i = 0; i < 5; i++)
+    for (let currentTile = 0; currentTile < WORD_LENGTH; currentTile++)
     {
-        let tileState = row.children[i].children[0].dataset.state;
-        let tileContent = row.children[i].children[0].textContent;
+        let tileState = row.children[currentTile].children[0].dataset.state;
+        let tileContent = row.children[currentTile].children[0].textContent;
+        let wordToCheck = row.textContent;
 
-        if (tileState == "correct")
-        {
-            regex += tileContent;
-        }
+        if (tileState == "correct") regex += tileContent;
 
         else if (tileState == "present")
         {
             // regex for this is not doing anything atm since no words with the char is left anyway
             regex += '[^' + tileContent + ']';
-            availableWords = availableWords.filter(function (word) {
-                return word.indexOf(tileContent) != i && word.includes(tileContent);
+            availableWords = availableWords.filter((word) => {
+                return word.indexOf(tileContent) != currentTile && word.includes(tileContent);
             });
         }
 
         else
         {
             regex += '.';
-            let index = getAllIndexes(row.textContent, tileContent);
+            let occurrences = getAllIndexes(wordToCheck, tileContent);
 
-            if (index.length == 1)
+            if (occurrences.length == 1)
             {
                 // We know the char doesnt appear at all in the word so we can remove any word with it
-                availableWords = availableWords.filter(function (word) {
+                availableWords = availableWords.filter((word) => {
                     return !word.includes(tileContent);
                 });
             }
 
-            else if (charIsCorrectElsewhere(row, tileContent, index))
+            else if (charIsCorrectElsewhere(row, tileContent, occurrences))
             {
                 // This is prone to bugs
-                availableWords = availableWords.filter(function (word) {
-                    return getAllIndexes(word, tileContent).length < index.length && word.indexOf(tileContent) != i;
+                availableWords = availableWords.filter((word) => {
+                    return getAllIndexes(word, tileContent).length < occurrences.length && word.indexOf(tileContent) != currentTile;
                 });
             }
 
             else
             {
                 // We know the char doesnt appear at all in the word so we can remove any word with it
-                availableWords = availableWords.filter(function (word) {
+                availableWords = availableWords.filter((word) => {
                     return !word.includes(tileContent);
                 });
             }
@@ -114,70 +115,58 @@ function checkBoardState() {
     }
 
     round++;
-    generateNewInput(regex, availableWords);
+    generateNewGuess(regex, availableWords);
 }
 
-function generateNewInput(regex, availableWords) {
-    let re = new RegExp(regex, "ig");
+function generateNewGuess(regex, availableWords) {
+    let regExpression = new RegExp(regex, "ig");
     // filter the availablewords with our regexp
-    availableWords = generateNewWordList(re, availableWords);
+    availableWords = generateNewWordList(regExpression, availableWords);
     // randomize a new input
     let newWord = generateNewWord(availableWords);
-    inputWord(newWord);
+    enterGuess(newWord);
+}
+
+function generateNewWordList(regExpression, availableWords) {
+    return availableWords.filter((word) => regExpression.test(word, "ig"));
+}
+
+function generateNewWord(availableWords) {
+    // THIS IS PURE RANDOMNESS, CAN BE BETTER
+    return availableWords[Math.floor(Math.random() * availableWords.length)]
 }
 
 function charIsCorrectElsewhere(row, char, index) {
     for (let i = 0; i < index.length; i++)
     {
-        if (row.children[index[i]].children[0].dataset.state == "correct" || row.children[index[i]].children[0].dataset.state == "present")
-        {
-            return true;
-        }
+        if (row.children[index[i]].children[0].dataset.state == "correct" || row.children[index[i]].children[0].dataset.state == "present") return true;
     }
     return false;
 }
 
-async function awaitTiles() {
-    for (let i = 0; i < 2; i++) {
-        await sleep(i * 2000);
-    }
-    checkBoardState();
-}
-async function waitForModalToLoad() {
-    for (let i = 0; i < 2; i++) {
-        await sleep(i * 2000);
-    }
-    onPageFullyLoaded();
-}
-
-function generateNewWordList(re, availableWords) {
-    return availableWords.filter((word) => re.test(word, "ig"));
-}
-
-function generateNewWord(newWordList) {
-    // THIS IS PURE RANDOMNESS, CAN BE BETTER
-    return newWordList[Math.floor(Math.random() * newWordList.length)]
-}
-
-function FatalError() {
-    Error.apply(this, arguments); this.name = "No more guesses.";
-}
-FatalError.prototype = Object.create(Error.prototype);
-
-function getAllIndexes(word, char) {
+function getAllIndexes(wordToCheck, charToLookFor) {
     var indexes = [], i;
-    for(i = 0; i < word.length; i++) {
-        if (word[i] === char) {
+    for(i = 0; i < wordToCheck.length; i++) {
+        if (wordToCheck[i] === charToLookFor) {
             indexes.push(i);
         }
     }
     return indexes;
 }
 
+async function awaitTileAnimations() {
+    await sleep(2000);
+    checkBoardState();
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function FatalError() {
+    Error.apply(this, arguments); this.name = "No more guesses.";
+}
+FatalError.prototype = Object.create(Error.prototype);
 
 // complete word list with all possible guesses
 let availableWords = ["lowes",
